@@ -1,16 +1,23 @@
-# tp1_doutreligne_julian
+# TP1 - Portfolio Flutter
 
-A new Flutter project.
+Premier projet Flutter réalisant une page de portfolio personnelle.
 
-## Getting Started
+## Fonctionnalités
 
-This project is a starting point for a Flutter application.
+- Mise en page avec image de fond et photo de profil
+- Utilisation de Stack pour superposer les éléments
+- Intégration de Google Fonts (Barlow)
+- Icônes Font Awesome pour les réseaux sociaux
+- Fonctionnalité de partage avec url_launcher
+- Design responsive avec des cartes rotatives
 
-A few resources to get you started if this is your first Flutter project:
+## Aperçu
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+![Page principale](screens/main.png)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Technologies utilisées
+
+- Flutter / Dart
+- Google Fonts
+- Font Awesome Flutter
+- URL Launcher

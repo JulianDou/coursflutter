@@ -1,16 +1,37 @@
-# tp3_doutreligne_julian
+# TP3 - Application Films Flutter
 
-A new Flutter project.
+Application de gestion de films avec liste, détails et favoris.
 
-## Getting Started
+## Fonctionnalités
 
-This project is a starting point for a Flutter application.
+- Liste de films avec affichage en grille
+- Page de détail pour chaque film
+- Système de favoris
+- Service de gestion des données (MovieService)
+- Thème personnalisé sombre avec accent doré (#CEA154)
+- Design Material 3
 
-A few resources to get you started if this is your first Flutter project:
+## Aperçu
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Liste des films
+![Liste principale](screens/main.png)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Détail d'un film
+![Détail du film](screens/detailfilm.png)
+
+### Films favoris
+![Favoris](screens/favoris.png)
+
+## Architecture
+
+- Séparation des préoccupations avec services
+- Modèles de données structurés
+- Navigation entre pages
+- Gestion d'état pour les favoris
+- Thème personnalisé cohérent
+
+## Technologies
+
+- Flutter / Dart
+- Material 3
+- Architecture en couches (UI / Service)

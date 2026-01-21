@@ -1,0 +1,50 @@
+[
+  {
+    "title": "Inception",
+    "year": 2010,
+    "poster": "https://image.tmdb.org/t/p/w500/aej3LRUga5rhgkmRP6XMFw3ejbl.jpg",
+    "description": "Un voleur qui s'infiltre dans les rêves des gens pour voler leurs secrets se voit confier une mission impossible : implanter une idée dans l'esprit d'un PDG."
+  },
+  {
+    "title": "Interstellar",
+    "year": 2014,
+    "poster": "https://image.tmdb.org/t/p/w500/1pnigkWWy8W032o9TKDneBa3eVK.jpg",
+    "description": "Une équipe d'explorateurs voyage à travers un trou de ver dans l'espace pour assurer la survie de l'humanité face à la fin de la Terre."
+  },
+  {
+    "title": "The Dark Knight",
+    "year": 2008,
+    "poster": "https://image.tmdb.org/t/p/w500/pyNXnq8QBWoK3b37RS6C3axwUOy.jpg",
+    "description": "Batman affronte le Joker, un criminel chaotique qui plonge Gotham dans l'anarchie et force le chevalier noir à affronter ses propres limites morales."
+  },
+  {
+    "title": "The Matrix",
+    "year": 1999,
+    "poster": "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+    "description": "Un hacker découvre la vérité sur la réalité simulée qui contrôle l'humanité et rejoint la rébellion pour la libérer."
+  },
+  {
+    "title": "The Shawshank Redemption",
+    "year": 1994,
+    "poster": "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
+    "description": "Deux prisonniers nouent une amitié profonde et cherchent l'espoir malgré des années d'incarcération."
+  },
+  {
+    "title": "Pulp Fiction",
+    "year": 1994,
+    "poster": "https://image.tmdb.org/t/p/w500/dM2w364MScsjFf7RP0lwr8D9GkD.jpg",
+    "description": "Des histoires entremêlées de criminels à Los Angeles, mêlant violence, humour noir et dialogues mémorables."
+  },
+  {
+    "title": "Fight Club",
+    "year": 1999,
+    "poster": "https://image.tmdb.org/t/p/w500/bptfVGEQuv6vDTIMVCHjJ9Dz8PX.jpg",
+    "description": "Un employé insomniaque rencontre un mystérieux vendeur de savon et fonde un club clandestin qui échappe au contrôle."
+  },
+  {
+    "title": "The Godfather",
+    "year": 1972,
+    "poster": "https://image.tmdb.org/t/p/w500/rPdtLWNsZmAtoZl9PK7S2wE3qiS.jpg",
+    "description": "La saga d'une famille mafieuse et la montée de Michael Corleone au pouvoir."
+  }
+]
