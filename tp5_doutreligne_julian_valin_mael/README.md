@@ -1,16 +1,25 @@
 # tp5_doutreligne_julian_valin_mael
 
-A new Flutter project.
+Notre projet repose sur une idée simple, pourquoi s'embêter à retenir ou devoir écrire les courses que l'on fait pour avoir le prix, autant utiliser la technologie.
 
-## Getting Started
+Nous vous proposons, une application, avec laquelle vous pouvez scanner vos articles préférés, et en toute simplicité, regarder le Nutri-Score, le prix, et vous pouvez même sauvegarder votre liste pour une prochaine fois.
 
-This project is a starting point for a Flutter application.
+Voici **ScanCourse**
 
-A few resources to get you started if this is your first Flutter project:
+## Code utilisé
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Cette application a été réalisée avec l'API Flutter comme base de code.
+L'API OpenFoodFacts pour la librairie des produits
+et l'API .... pour le scan des QR codes
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+
+## Amélioration
+En plus de pouvoir scanner ses articles, on proposera dans un avenir court, la possibilité de visionner l'intégralité des articles disponibles, afin de faire sa liste avant les courses, de quoi vous simplifier la vie.
+
+Une fonctionnalité vocale vous permettra, à l'aide d'une IA (Coursier) intégrée, de communiquer avec l'application afin de trouver les articles que vous lui demandez.
+
+## Équipes
+Julian Doutreligne
+Maël Valin
+
+## screen de l'application
