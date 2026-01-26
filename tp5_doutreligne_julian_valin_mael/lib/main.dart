@@ -1,8 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+﻿import 'package:flutter/material.dart';
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -17,16 +15,421 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Barcode Scanner',
+      title: 'Liste de Courses',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.teal,
+          brightness: Brightness.light,
+        ),
         useMaterial3: true,
       ),
-      home: const BarcodeScannerScreen(),
+      home: const ShoppingListScreen(),
     );
   }
 }
 
+// Modèle pour un produit dans la liste
+class CartProduct {
+  final String barcode;
+  final String name;
+  final String? brand;
+  final String? imageUrl;
+  final String? nutriscoreGrade;
+  final double? price;
+  int quantity;
+
+  CartProduct({
+    required this.barcode,
+    required this.name,
+    this.brand,
+    this.imageUrl,
+    this.nutriscoreGrade,
+    this.price,
+    this.quantity = 1,
+  });
+}
+
+class ShoppingListScreen extends StatefulWidget {
+  const ShoppingListScreen({super.key});
+
+  @override
+  State<ShoppingListScreen> createState() => _ShoppingListScreenState();
+}
+
+class _ShoppingListScreenState extends State<ShoppingListScreen> {
+  final List<CartProduct> _cartProducts = [];
+
+  void _addProduct(CartProduct product) {
+    setState(() {
+      // Vérifier si le produit existe déjà
+      final existingIndex = _cartProducts.indexWhere(
+        (p) => p.barcode == product.barcode,
+      );
+
+      if (existingIndex != -1) {
+        // Incrémenter la quantité si le produit existe
+        _cartProducts[existingIndex].quantity++;
+      } else {
+        // Ajouter le nouveau produit
+        _cartProducts.add(product);
+      }
+    });
+  }
+
+  void _removeProduct(int index) {
+    setState(() {
+      _cartProducts.removeAt(index);
+    });
+  }
+
+  void _updateQuantity(int index, int delta) {
+    setState(() {
+      _cartProducts[index].quantity += delta;
+      if (_cartProducts[index].quantity <= 0) {
+        _cartProducts.removeAt(index);
+      }
+    });
+  }
+
+  void _clearList() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Vider la liste'),
+        content: const Text('Voulez-vous vraiment vider toute la liste ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _cartProducts.clear();
+              });
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Vider'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  double get _totalPrice {
+    return _cartProducts.fold(0.0, (sum, product) {
+      return sum + ((product.price ?? 0.0) * product.quantity);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ma Liste de Courses'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          if (_cartProducts.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep),
+              tooltip: 'Vider la liste',
+              onPressed: _clearList,
+            ),
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: 'Scanner un produit',
+            onPressed: () async {
+              final product = await Navigator.push<CartProduct>(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BarcodeScannerScreen(),
+                ),
+              );
+              if (product != null) {
+                _addProduct(product);
+              }
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: _cartProducts.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.shopping_cart_outlined,
+                          size: 100,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Votre liste est vide',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Scannez un produit pour commencer',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: _cartProducts.length,
+                    itemBuilder: (context, index) {
+                      final product = _cartProducts[index];
+                      return Card(
+                        elevation: 2,
+                        margin: const EdgeInsets.symmetric(
+                          vertical: 4,
+                          horizontal: 8,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Image du produit
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: product.imageUrl != null
+                                    ? Image.network(
+                                        product.imageUrl!,
+                                        width: 80,
+                                        height: 80,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Container(
+                                                width: 80,
+                                                height: 80,
+                                                color: Colors.grey[200],
+                                                child: const Icon(
+                                                  Icons.image_not_supported,
+                                                  color: Colors.grey,
+                                                ),
+                                              );
+                                            },
+                                      )
+                                    : Container(
+                                        width: 80,
+                                        height: 80,
+                                        color: Colors.grey[200],
+                                        child: const Icon(
+                                          Icons.shopping_bag,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Informations du produit
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      product.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (product.brand != null) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        product.brand!,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        // Nutri-Score
+                                        if (product.nutriscoreGrade != null)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: _getNutriscoreColor(
+                                                product.nutriscoreGrade!,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              'Nutri-Score ${product.nutriscoreGrade!.toUpperCase()}',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ),
+                                        const Spacer(),
+                                        // Prix
+                                        if (product.price != null)
+                                          Text(
+                                            '${(product.price! * product.quantity).toStringAsFixed(2)} €',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: Colors.teal,
+                                            ),
+                                          )
+                                        else
+                                          const Text(
+                                            'Prix non disponible',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Contrôles de quantité
+                              Column(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.add_circle,
+                                      color: Colors.teal,
+                                    ),
+                                    onPressed: () => _updateQuantity(index, 1),
+                                    iconSize: 28,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    child: Text(
+                                      '${product.quantity}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      product.quantity > 1
+                                          ? Icons.remove_circle
+                                          : Icons.delete,
+                                      color: product.quantity > 1
+                                          ? Colors.orange
+                                          : Colors.red,
+                                    ),
+                                    onPressed: () => _updateQuantity(index, -1),
+                                    iconSize: 28,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          // Barre de total
+          if (_cartProducts.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.teal[50],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Total',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        '${_cartProducts.length} article(s)',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '${_totalPrice.toStringAsFixed(2)} €',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.teal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Color _getNutriscoreColor(String grade) {
+    switch (grade.toLowerCase()) {
+      case 'a':
+        return const Color(0xFF038141);
+      case 'b':
+        return const Color(0xFF85BB2F);
+      case 'c':
+        return const Color(0xFFFECB02);
+      case 'd':
+        return const Color(0xFFEE8100);
+      case 'e':
+        return const Color(0xFFE63E11);
+      default:
+        return Colors.grey;
+    }
+  }
+}
+
+// Écran de scan de code-barres
 class BarcodeScannerScreen extends StatefulWidget {
   const BarcodeScannerScreen({super.key});
 
@@ -38,10 +441,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   final BarcodeScanner _barcodeScanner = BarcodeScanner();
 
-  List<Barcode> _scannedBarcodes = [];
   XFile? _selectedImage;
   bool _isScanning = false;
-  Map<String, dynamic>? _productData;
   bool _isFetchingProduct = false;
 
   @override
@@ -50,10 +451,51 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     super.dispose();
   }
 
+  Future<void> _scanBarcodeFromImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _imagePicker.pickImage(source: source);
+
+      if (pickedFile != null) {
+        setState(() {
+          _selectedImage = pickedFile;
+          _isScanning = true;
+        });
+
+        final inputImage = InputImage.fromFilePath(pickedFile.path);
+        final barcodes = await _barcodeScanner.processImage(inputImage);
+
+        setState(() {
+          _isScanning = false;
+        });
+
+        if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
+          await _fetchProductInfo(barcodes.first.rawValue!);
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Aucun code-barre détecté'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      }
+      setState(() {
+        _isScanning = false;
+      });
+    }
+  }
+
   Future<void> _fetchProductInfo(String barcode) async {
     setState(() {
       _isFetchingProduct = true;
-      _productData = null;
     });
 
     try {
@@ -68,33 +510,46 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         },
       );
 
+      setState(() {
+        _isFetchingProduct = false;
+      });
+
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
 
         if (jsonData['status'] == 1) {
-          setState(() {
-            _productData = jsonData['product'];
-            _isFetchingProduct = false;
-          });
+          final productData = jsonData['product'];
+
+          // Créer un produit avec les données récupérées
+          final product = CartProduct(
+            barcode: barcode,
+            name: productData['product_name'] ?? 'Produit inconnu',
+            brand: productData['brands'],
+            imageUrl: productData['image_url'],
+            nutriscoreGrade: productData['nutriscore_grade'],
+            price: _extractPrice(productData),
+          );
+
+          if (mounted) {
+            Navigator.pop(context, product);
+          }
         } else {
-          setState(() {
-            _isFetchingProduct = false;
-          });
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Produit non trouvé dans la base OpenFoodFacts'),
+                backgroundColor: Colors.red,
               ),
             );
           }
         }
       } else {
-        setState(() {
-          _isFetchingProduct = false;
-        });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: ${response.statusCode}')),
+            SnackBar(
+              content: Text('Erreur serveur: ${response.statusCode}'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
@@ -110,411 +565,145 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     }
   }
 
-  Future<void> _scanBarcodeFromImage(ImageSource source) async {
-    try {
-      // Request permissions
-      if (source == ImageSource.camera) {
-        final cameraStatus = await Permission.camera.request();
-        if (!cameraStatus.isGranted) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Camera permission denied')),
-            );
-          }
-          return;
-        }
-      } else {
-        final storageStatus = await Permission.photos.request();
-        if (!storageStatus.isGranted) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Storage permission denied')),
-            );
-          }
-          return;
-        }
-      }
-
-      final XFile? pickedFile = await _imagePicker.pickImage(source: source);
-
-      if (pickedFile != null) {
-        setState(() {
-          _selectedImage = pickedFile;
-          _isScanning = true;
-        });
-
-        print('Processing image: ${pickedFile.path}');
-        final inputImage = InputImage.fromFilePath(pickedFile.path);
-        final barcodes = await _barcodeScanner.processImage(inputImage);
-
-        print('Barcodes found: ${barcodes.length}');
-        for (int i = 0; i < barcodes.length; i++) {
-          print('Barcode $i: ${barcodes[i].rawValue}');
-        }
-
-        if (mounted) {
-          setState(() {
-            _scannedBarcodes = barcodes;
-            _isScanning = false;
-          });
-        }
-
-        // Si un code-barre de type produit est détecté, récupérer les infos
-        if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
-          await _fetchProductInfo(barcodes.first.rawValue!);
-        }
-      }
-    } catch (e) {
-      print('Error scanning barcode: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-        setState(() {
-          _isScanning = false;
-        });
-      }
+  double? _extractPrice(Map<String, dynamic> productData) {
+    // OpenFoodFacts ne fournit pas toujours le prix
+    // Pour la démo, générer un prix basé sur le hash du nom
+    if (productData['product_name'] != null) {
+      final hash = productData['product_name'].hashCode.abs();
+      return (hash % 1900 + 100) / 100.0; // Entre 1.00 et 20.00€
     }
-  }
-
-  void _clearResults() {
-    setState(() {
-      _selectedImage = null;
-      _scannedBarcodes = [];
-      _productData = null;
-    });
-  }
-
-  String _getBarcodeTypeString(BarcodeType type) {
-    if (type == BarcodeType.product) {
-      return 'Product';
-    } else if (type == BarcodeType.wifi) {
-      return 'WiFi';
-    } else if (type == BarcodeType.url) {
-      return 'URL';
-    } else if (type == BarcodeType.email) {
-      return 'Email';
-    } else if (type == BarcodeType.phone) {
-      return 'Phone';
-    } else if (type == BarcodeType.sms) {
-      return 'SMS';
-    } else if (type == BarcodeType.contactInfo) {
-      return 'Contact';
-    } else if (type == BarcodeType.calendarEvent) {
-      return 'Event';
-    } else if (type == BarcodeType.driverLicense) {
-      return 'Driver License';
-    } else if (type == BarcodeType.unknown) {
-      return 'Unknown';
-    } else {
-      return type.name;
-    }
-  }
-
-  Widget _buildProductInfo(String label, dynamic value) {
-    if (value == null || value.toString().isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: RichText(
-        text: TextSpan(
-          style: DefaultTextStyle.of(context).style,
-          children: [
-            TextSpan(
-              text: '$label: ',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            TextSpan(text: value.toString()),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _getNutriscoreColor(String grade) {
-    switch (grade.toLowerCase()) {
-      case 'a':
-        return Colors.green;
-      case 'b':
-        return Colors.lightGreen;
-      case 'c':
-        return Colors.yellow[700]!;
-      case 'd':
-        return Colors.orange;
-      case 'e':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text('Scanner un produit'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Barcode Scanner'),
       ),
       body: Center(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (_selectedImage != null)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: kIsWeb
-                        ? Image.network(
-                            _selectedImage!.path,
-                            height: 300,
-                            width: 300,
-                            fit: BoxFit.cover,
-                          )
-                        : Image.file(
-                            File(_selectedImage!.path),
-                            height: 300,
-                            width: 300,
-                            fit: BoxFit.cover,
-                          ),
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (_selectedImage != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey, width: 2),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                if (_scannedBarcodes.isEmpty && _selectedImage == null)
-                  Container(
-                    height: 300,
-                    width: 300,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'No image selected',
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.file(
+                      File(_selectedImage!.path),
+                      height: 300,
+                      width: 300,
+                      fit: BoxFit.cover,
                     ),
                   ),
-                const SizedBox(height: 20),
-                if (_isScanning)
-                  const CircularProgressIndicator()
-                else if (_scannedBarcodes.isEmpty && _selectedImage != null)
-                  const Text('No barcodes detected')
-                else if (_scannedBarcodes.isNotEmpty)
-                  Column(
+                )
+              else
+                Container(
+                  height: 300,
+                  width: 300,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    border: Border.all(color: Colors.grey[300]!, width: 2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Icon(
+                        Icons.qr_code_scanner,
+                        size: 80,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
                       Text(
-                        'Found ${_scannedBarcodes.length} barcode(s):',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                        'Aucune image sélectionnée',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 32),
+              if (_isScanning || _isFetchingProduct)
+                Column(
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      _isScanning
+                          ? 'Scan en cours...'
+                          : 'Récupération des informations...',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                )
+              else
+                Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () =>
+                            _scanBarcodeFromImage(ImageSource.camera),
+                        icon: const Icon(Icons.camera_alt, size: 28),
+                        label: const Text(
+                          'Prendre une photo',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
                         ),
                       ),
-                      Text(
-                        _scannedBarcodes
-                            .map((b) => b.rawValue ?? 'No value')
-                            .join('\n'),
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      Text(
-                        _scannedBarcodes
-                            .map((b) =>
-                                'Type: ${_getBarcodeTypeString(b.type)}, Format: ${b.format.name}')
-                            .join('\n'),
-                        style: const TextStyle(fontSize: 14),
-                      )
-                    ]
-                  ),
-                  // Expanded(
-                  //   child: ListView.builder(
-                  //     shrinkWrap: true,
-                  //     itemCount: _scannedBarcodes.length,
-                  //     itemBuilder: (context, index) {
-                  //       final barcode = _scannedBarcodes[index];
-                  //       return Card(
-                  //         margin: const EdgeInsets.symmetric(vertical: 8),
-                  //         child: Padding(
-                  //           padding: const EdgeInsets.all(12.0),
-                  //           child: Column(
-                  //             crossAxisAlignment: CrossAxisAlignment.start,
-                  //             children: [
-                  //               Text(
-                  //                 'Barcode ${index + 1}',
-                  //                 style: const TextStyle(
-                  //                   fontWeight: FontWeight.bold,
-                  //                   fontSize: 16,
-                  //                 ),
-                  //               ),
-                  //               const SizedBox(height: 8),
-                  //               Text(
-                  //                 'Type: ${_getBarcodeTypeString(barcode.type)}',
-                  //                 style: const TextStyle(fontSize: 14),
-                  //               ),
-                  //               const SizedBox(height: 4),
-                  //               Text(
-                  //                 'Format: ${barcode.format.name}',
-                  //                 style: const TextStyle(fontSize: 14),
-                  //               ),
-                  //               const SizedBox(height: 8),
-                  //               Container(
-                  //                 padding: const EdgeInsets.all(8),
-                  //                 decoration: BoxDecoration(
-                  //                   color: Colors.grey[200],
-                  //                   borderRadius: BorderRadius.circular(4),
-                  //                 ),
-                  //                 child: SelectableText(
-                  //                   barcode.rawValue ?? 'No value',
-                  //                   style: const TextStyle(
-                  //                     fontFamily: 'monospace',
-                  //                     fontSize: 12,
-                  //                   ),
-                  //                 ),
-                  //               ),
-                  //             ],
-                  //           ),
-                  //         ),
-                  //       );
-                  //     },
-                  //   ),
-                  // ),
-                const SizedBox(height: 20),
-                // Affichage des informations du produit OpenFoodFacts
-                if (_isFetchingProduct)
-                  const Column(
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 8),
-                      Text('Récupération des informations du produit...'),
-                    ],
-                  )
-                else if (_productData != null)
-                  Card(
-                    elevation: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Informations du produit',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                          const Divider(),
-                          if (_productData!['image_url'] != null)
-                            Center(
-                              child: Image.network(
-                                _productData!['image_url'],
-                                height: 150,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
-                                    Icons.image_not_supported,
-                                    size: 100,
-                                  );
-                                },
-                              ),
-                            ),
-                          const SizedBox(height: 12),
-                          _buildProductInfo(
-                            'Nom',
-                            _productData!['product_name'],
-                          ),
-                          _buildProductInfo('Marque', _productData!['brands']),
-                          _buildProductInfo(
-                            'Catégories',
-                            _productData!['categories'],
-                          ),
-                          _buildProductInfo(
-                            'Quantité',
-                            _productData!['quantity'],
-                          ),
-                          if (_productData!['nutriscore_grade'] != null)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4.0,
-                              ),
-                              child: Row(
-                                children: [
-                                  const Text(
-                                    'Nutri-Score: ',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getNutriscoreColor(
-                                        _productData!['nutriscore_grade'],
-                                      ),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      _productData!['nutriscore_grade']
-                                          .toString()
-                                          .toUpperCase(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          _buildProductInfo(
-                            'Ingrédients',
-                            _productData!['ingredients_text'],
-                          ),
-                        ],
-                      ),
                     ),
-                  ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: _isScanning
-                          ? null
-                          : () => _scanBarcodeFromImage(ImageSource.camera),
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('Camera'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: _isScanning
-                          ? null
-                          : () => _scanBarcodeFromImage(ImageSource.gallery),
-                      icon: const Icon(Icons.image),
-                      label: const Text('Gallery'),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            _scanBarcodeFromImage(ImageSource.gallery),
+                        icon: const Icon(Icons.image, size: 28),
+                        label: const Text(
+                          'Choisir depuis la galerie',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: const BorderSide(color: Colors.teal, width: 2),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                if (_selectedImage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12.0),
-                    child: ElevatedButton.icon(
-                      onPressed: _clearResults,
-                      icon: const Icon(Icons.clear),
-                      label: const Text('Clear'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue[700]),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Scannez le code-barre d\'un produit alimentaire pour l\'ajouter à votre liste',
+                        style: TextStyle(fontSize: 13, color: Colors.blue[900]),
                       ),
                     ),
-                  ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
