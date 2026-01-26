@@ -4,6 +4,12 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'widgets/glass_morphism.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'models/product.dart';
+import 'models/shopping_list.dart';
+import 'pages/saved_lists_page.dart';
+import 'services/storage_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,7 +25,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.teal,
+          seedColor: Colors.white,
           brightness: Brightness.light,
         ),
         useMaterial3: true,
@@ -59,6 +65,7 @@ class ShoppingListScreen extends StatefulWidget {
 
 class _ShoppingListScreenState extends State<ShoppingListScreen> {
   final List<CartProduct> _cartProducts = [];
+  final StorageService _storage = StorageService();
 
   void _addProduct(CartProduct product) {
     setState(() {
@@ -127,6 +134,82 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     });
   }
 
+  String get _averageNutriscore {
+    final grades = _cartProducts
+        .where((p) => p.nutriscoreGrade != null)
+        .map((p) => p.nutriscoreGrade!.toLowerCase())
+        .toList();
+    if (grades.isEmpty) return 'N/A';
+
+    final gradeValues = {'a': 5, 'b': 4, 'c': 3, 'd': 2, 'e': 1};
+    final total = grades.fold<int>(
+      0,
+      (sum, grade) => sum + (gradeValues[grade] ?? 0),
+    );
+    final averageValue = total / grades.length;
+
+    // Trouver la lettre correspondant à la valeur moyenne
+    String averageGrade = 'N/A';
+    gradeValues.forEach((key, value) {
+      if (averageValue >= value) {
+        averageGrade = key.toUpperCase();
+        return;
+      }
+    });
+
+    return averageGrade;
+  }
+
+  Future<void> _saveCurrentList() async {
+    if (_cartProducts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La liste est vide')),
+      );
+      return;
+    }
+    final now = DateTime.now();
+    final name = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} '
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final products = _cartProducts
+        .map((c) => Product(
+              id: c.barcode,
+              name: c.name,
+              price: (c.price ?? 0.0),
+              quantity: c.quantity,
+            ))
+        .toList();
+    final list = ShoppingList(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: name,
+      products: products,
+    );
+    await _storage.addList(list);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Liste enregistrée: "$name"')),
+    );
+  }
+
+  Future<void> _browseSavedLists() async {
+    final result = await Navigator.of(context).push<ShoppingList?>(
+      MaterialPageRoute(builder: (_) => const SavedListsPage()),
+    );
+    if (result != null) {
+      setState(() {
+        _cartProducts
+          ..clear()
+          ..addAll(result.products.map((p) => CartProduct(
+                barcode: p.id,
+                name: p.name,
+                price: p.price,
+                quantity: p.quantity,
+              )));
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Liste chargée: "${result.name}"')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -134,11 +217,22 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         title: const Text('Ma Liste de Courses'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.list_alt),
+            tooltip: 'Listes enregistrées',
+            onPressed: _browseSavedLists,
+          ),
           if (_cartProducts.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep),
               tooltip: 'Vider la liste',
               onPressed: _clearList,
+            ),
+          if (_cartProducts.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.save),
+              tooltip: 'Enregistrer la liste',
+              onPressed: _saveCurrentList,
             ),
           IconButton(
             icon: const Icon(Icons.qr_code_scanner),
@@ -157,7 +251,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: GradientBackground(
+        child: Column(
         children: [
           Expanded(
             child: _cartProducts.isEmpty
@@ -190,18 +285,14 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(12),
                     itemCount: _cartProducts.length,
                     itemBuilder: (context, index) {
                       final product = _cartProducts[index];
-                      return Card(
-                        elevation: 2,
-                        margin: const EdgeInsets.symmetric(
-                          vertical: 4,
-                          horizontal: 8,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: GlassContainer(
+                          borderRadius: 12,
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -258,7 +349,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                                         product.brand!,
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: Colors.grey[600],
+                                          color: Colors.grey.shade700,
                                         ),
                                       ),
                                     ],
@@ -293,14 +384,14 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                                         if (product.price != null)
                                           Text(
                                             '${(product.price! * product.quantity).toStringAsFixed(2)} €',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
                                               color: Colors.teal,
                                             ),
                                           )
                                         else
-                                          const Text(
+                                          Text(
                                             'Prix non disponible',
                                             style: TextStyle(
                                               fontSize: 12,
@@ -316,7 +407,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                               Column(
                                 children: [
                                   IconButton(
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.add_circle,
                                       color: Colors.teal,
                                     ),
@@ -331,7 +422,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                                     ),
                                     child: Text(
                                       '${product.quantity}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 18,
                                       ),
@@ -363,50 +454,84 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           // Barre de total
           if (_cartProducts.isNotEmpty)
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.teal[50],
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Total',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+              padding: const EdgeInsets.all(12),
+              child: GlassContainer(
+                borderRadius: 16,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  spacing: 12,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Total',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_cartProducts.length} article(s)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Text(
-                        '${_cartProducts.length} article(s)',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '${_totalPrice.toStringAsFixed(2)} €',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.teal,
+                        Text(
+                          '${_totalPrice.toStringAsFixed(2)} €',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Nutri-Score moyen :',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            color: _getNutriscoreColor(_averageNutriscore),
+                          ),
+                          child: Text(
+                            _averageNutriscore,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        )
+                      ]
+                    )
+                  ],
+                ),
               ),
             ),
         ],
+        ),
       ),
     );
   }
@@ -597,12 +722,19 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.file(
-                      File(_selectedImage!.path),
-                      height: 300,
-                      width: 300,
-                      fit: BoxFit.cover,
-                    ),
+                    child: kIsWeb
+                        ? Image.network(
+                            _selectedImage!.path,
+                            height: 300,
+                            width: 300,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.file(
+                            File(_selectedImage!.path),
+                            height: 300,
+                            width: 300,
+                            fit: BoxFit.cover,
+                          ),
                   ),
                 )
               else
