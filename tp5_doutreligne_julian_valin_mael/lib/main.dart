@@ -215,7 +215,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Ma Liste de Courses'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.list_alt),
@@ -257,31 +257,35 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           Expanded(
             child: _cartProducts.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.shopping_cart_outlined,
-                          size: 100,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Votre liste est vide',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
+                    child: GlassContainer(
+                      borderRadius: 12,
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 100,
+                            color: Colors.teal,
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Scannez un produit pour commencer',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[500],
+                          const SizedBox(height: 16),
+                          Text(
+                            'Votre liste est vide',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.teal,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            'Scannez un produit pour commencer',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : ListView.builder(
@@ -705,7 +709,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Scanner un produit'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Colors.white,
       ),
       body: Center(
         child: SingleChildScrollView(

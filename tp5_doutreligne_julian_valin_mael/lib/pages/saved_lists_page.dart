@@ -119,10 +119,6 @@ class _SavedListDetailPageState extends State<SavedListDetailPage> {
     }
   }
 
-  void _loadIntoMain() {
-    Navigator.pop(context, widget.list);
-  }
-
   @override
   Widget build(BuildContext context) {
     final list = widget.list;
@@ -261,15 +257,6 @@ class _SavedListDetailPageState extends State<SavedListDetailPage> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  ElevatedButton.icon(
-                    onPressed: _loadIntoMain,
-                    icon: const Icon(Icons.download),
-                    label: const Text('Charger'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
                   ElevatedButton.icon(
                     onPressed: _rename,
                     icon: const Icon(Icons.edit),
