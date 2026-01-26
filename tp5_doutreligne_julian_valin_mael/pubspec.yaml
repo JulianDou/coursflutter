@@ -37,6 +37,7 @@ dependencies:
   google_mlkit_barcode_scanning: ^0.10.0
   camera: ^0.10.5+2
   image_picker: ^1.0.4
+  http: ^1.1.0
 
 dev_dependencies:
   flutter_test:
