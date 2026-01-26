@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 
 void main() {
@@ -46,6 +48,29 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
 
   Future<void> _scanBarcodeFromImage(ImageSource source) async {
     try {
+      // Request permissions
+      if (source == ImageSource.camera) {
+        final cameraStatus = await Permission.camera.request();
+        if (!cameraStatus.isGranted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Camera permission denied')),
+            );
+          }
+          return;
+        }
+      } else {
+        final storageStatus = await Permission.photos.request();
+        if (!storageStatus.isGranted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Storage permission denied')),
+            );
+          }
+          return;
+        }
+      }
+
       final XFile? pickedFile = await _imagePicker.pickImage(source: source);
       
       if (pickedFile != null) {
@@ -54,21 +79,32 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
           _isScanning = true;
         });
 
+        print('Processing image: ${pickedFile.path}');
         final inputImage = InputImage.fromFilePath(pickedFile.path);
         final barcodes = await _barcodeScanner.processImage(inputImage);
 
+        print('Barcodes found: ${barcodes.length}');
+        for (int i = 0; i < barcodes.length; i++) {
+          print('Barcode $i: ${barcodes[i].rawValue}');
+        }
+
+        if (mounted) {
+          setState(() {
+            _scannedBarcodes = barcodes;
+            _isScanning = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error scanning barcode: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
         setState(() {
-          _scannedBarcodes = barcodes;
           _isScanning = false;
         });
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-      setState(() {
-        _isScanning = false;
-      });
     }
   }
 
@@ -82,8 +118,25 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   String _getBarcodeTypeString(BarcodeType type) {
     if (type == BarcodeType.product) {
       return 'Product';
-    }
-    else {
+    } else if (type == BarcodeType.wifi) {
+      return 'WiFi';
+    } else if (type == BarcodeType.url) {
+      return 'URL';
+    } else if (type == BarcodeType.email) {
+      return 'Email';
+    } else if (type == BarcodeType.phone) {
+      return 'Phone';
+    } else if (type == BarcodeType.sms) {
+      return 'SMS';
+    } else if (type == BarcodeType.contactInfo) {
+      return 'Contact';
+    } else if (type == BarcodeType.calendarEvent) {
+      return 'Event';
+    } else if (type == BarcodeType.driverLicense) {
+      return 'Driver License';
+    } else if (type == BarcodeType.unknown) {
+      return 'Unknown';
+    } else {
       return type.name;
     }
   }
@@ -109,12 +162,19 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                       border: Border.all(color: Colors.grey),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Image.file(
-                      File(_selectedImage!.path),
-                      height: 300,
-                      width: 300,
-                      fit: BoxFit.cover,
-                    ),
+                    child: kIsWeb
+                        ? Image.network(
+                            _selectedImage!.path,
+                            height: 300,
+                            width: 300,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.file(
+                            File(_selectedImage!.path),
+                            height: 300,
+                            width: 300,
+                            fit: BoxFit.cover,
+                          ),
                   ),
                 if (_scannedBarcodes.isEmpty && _selectedImage == null)
                   Container(
@@ -137,58 +197,82 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                 else if (_scannedBarcodes.isEmpty && _selectedImage != null)
                   const Text('No barcodes detected')
                 else if (_scannedBarcodes.isNotEmpty)
-                  Expanded(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: _scannedBarcodes.length,
-                      itemBuilder: (context, index) {
-                        final barcode = _scannedBarcodes[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Barcode ${index + 1}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Type: ${_getBarcodeTypeString(barcode.type)}',
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Format: ${barcode.format.name}',
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                                const SizedBox(height: 8),
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: SelectableText(
-                                    barcode.rawValue ?? 'No value',
-                                    style: const TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                  Column(
+                    children: [
+                      Text(
+                        'Found ${_scannedBarcodes.length} barcode(s):',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        _scannedBarcodes
+                            .map((b) => b.rawValue ?? 'No value')
+                            .join('\n'),
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      Text(
+                        _scannedBarcodes
+                            .map((b) =>
+                                'Type: ${_getBarcodeTypeString(b.type)}, Format: ${b.format.name}')
+                            .join('\n'),
+                        style: const TextStyle(fontSize: 14),
+                      )
+                    ]
                   ),
+                  // Expanded(
+                  //   child: ListView.builder(
+                  //     shrinkWrap: true,
+                  //     itemCount: _scannedBarcodes.length,
+                  //     itemBuilder: (context, index) {
+                  //       final barcode = _scannedBarcodes[index];
+                  //       return Card(
+                  //         margin: const EdgeInsets.symmetric(vertical: 8),
+                  //         child: Padding(
+                  //           padding: const EdgeInsets.all(12.0),
+                  //           child: Column(
+                  //             crossAxisAlignment: CrossAxisAlignment.start,
+                  //             children: [
+                  //               Text(
+                  //                 'Barcode ${index + 1}',
+                  //                 style: const TextStyle(
+                  //                   fontWeight: FontWeight.bold,
+                  //                   fontSize: 16,
+                  //                 ),
+                  //               ),
+                  //               const SizedBox(height: 8),
+                  //               Text(
+                  //                 'Type: ${_getBarcodeTypeString(barcode.type)}',
+                  //                 style: const TextStyle(fontSize: 14),
+                  //               ),
+                  //               const SizedBox(height: 4),
+                  //               Text(
+                  //                 'Format: ${barcode.format.name}',
+                  //                 style: const TextStyle(fontSize: 14),
+                  //               ),
+                  //               const SizedBox(height: 8),
+                  //               Container(
+                  //                 padding: const EdgeInsets.all(8),
+                  //                 decoration: BoxDecoration(
+                  //                   color: Colors.grey[200],
+                  //                   borderRadius: BorderRadius.circular(4),
+                  //                 ),
+                  //                 child: SelectableText(
+                  //                   barcode.rawValue ?? 'No value',
+                  //                   style: const TextStyle(
+                  //                     fontFamily: 'monospace',
+                  //                     fontSize: 12,
+                  //                   ),
+                  //                 ),
+                  //               ),
+                  //             ],
+                  //           ),
+                  //         ),
+                  //       );
+                  //     },
+                  //   ),
+                  // ),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
