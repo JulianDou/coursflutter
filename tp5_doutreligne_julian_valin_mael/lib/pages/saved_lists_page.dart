@@ -5,7 +5,9 @@ import '../services/storage_service.dart';
 import '../widgets/glass_morphism.dart';
 
 class SavedListsPage extends StatefulWidget {
-  const SavedListsPage({super.key});
+  final bool performanceMode;
+
+  const SavedListsPage({super.key, this.performanceMode = false});
 
   @override
   State<SavedListsPage> createState() => _SavedListsPageState();
@@ -33,7 +35,10 @@ class _SavedListsPageState extends State<SavedListsPage> {
   void _openDetails(ShoppingList list) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => SavedListDetailPage(list: list),
+        builder: (_) => SavedListDetailPage(
+          list: list,
+          performanceMode: widget.performanceMode,
+        ),
       ),
     );
     await _load();
@@ -44,36 +49,45 @@ class _SavedListsPageState extends State<SavedListsPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Listes sauvegardées')),
       body: GradientBackground(
+        performanceMode: widget.performanceMode,
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _lists.isEmpty
-                ? const Center(child: Text('Aucune liste sauvegardée pour le moment'))
-                : ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _lists.length,
-                    itemBuilder: (context, index) {
-                      final l = _lists[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: GlassContainer(
-                          borderRadius: 12,
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                            title: Text(
-                              l.name,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: Text(
-                              '${l.productCount} articles • Total: ${l.totalPrice.toStringAsFixed(2)} €',
-                              style: TextStyle(color: Colors.grey[700]),
-                            ),
-                            trailing: const Icon(Icons.chevron_right, color: Colors.teal),
-                            onTap: () => _openDetails(l),
-                          ),
+            ? const Center(
+                child: Text('Aucune liste sauvegardée pour le moment'),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: _lists.length,
+                itemBuilder: (context, index) {
+                  final l = _lists[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: GlassContainer(
+                      borderRadius: 12,
+                      performanceMode: widget.performanceMode,
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
                         ),
-                      );
-                    },
-                  ),
+                        title: Text(
+                          l.name,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          '${l.productCount} articles • Total: ${l.totalPrice.toStringAsFixed(2)} €',
+                          style: TextStyle(color: Colors.grey[700]),
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                          color: Colors.teal,
+                        ),
+                        onTap: () => _openDetails(l),
+                      ),
+                    ),
+                  );
+                },
+              ),
       ),
     );
   }
@@ -81,7 +95,13 @@ class _SavedListsPageState extends State<SavedListsPage> {
 
 class SavedListDetailPage extends StatefulWidget {
   final ShoppingList list;
-  const SavedListDetailPage({super.key, required this.list});
+  final bool performanceMode;
+
+  const SavedListDetailPage({
+    super.key,
+    required this.list,
+    this.performanceMode = false,
+  });
 
   @override
   State<SavedListDetailPage> createState() => _SavedListDetailPageState();
@@ -106,8 +126,14 @@ class _SavedListDetailPageState extends State<SavedListDetailPage> {
           decoration: const InputDecoration(hintText: 'Nouveau nom'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, null), child: const Text('Annuler')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Enregistrer')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, null),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Enregistrer'),
+          ),
         ],
       ),
     );
@@ -125,6 +151,7 @@ class _SavedListDetailPageState extends State<SavedListDetailPage> {
     return Scaffold(
       appBar: AppBar(title: Text(list.name)),
       body: GradientBackground(
+        performanceMode: widget.performanceMode,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -138,6 +165,7 @@ class _SavedListDetailPageState extends State<SavedListDetailPage> {
                     child: GlassContainer(
                       borderRadius: 12,
                       padding: const EdgeInsets.all(12),
+                      performanceMode: widget.performanceMode,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -165,6 +193,7 @@ class _SavedListDetailPageState extends State<SavedListDetailPage> {
                     child: GlassContainer(
                       borderRadius: 12,
                       padding: const EdgeInsets.all(12),
+                      performanceMode: widget.performanceMode,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -203,6 +232,7 @@ class _SavedListDetailPageState extends State<SavedListDetailPage> {
               if (list.products.isEmpty)
                 GlassContainer(
                   borderRadius: 12,
+                  performanceMode: widget.performanceMode,
                   child: Text(
                     'Aucun produit dans cette liste',
                     style: TextStyle(color: Colors.grey[600]),
@@ -216,6 +246,7 @@ class _SavedListDetailPageState extends State<SavedListDetailPage> {
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: GlassContainer(
                         borderRadius: 12,
+                        performanceMode: widget.performanceMode,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -226,7 +257,9 @@ class _SavedListDetailPageState extends State<SavedListDetailPage> {
                                 children: [
                                   Text(
                                     p.name.isEmpty ? '(Sans nom)' : p.name,
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(

@@ -225,7 +225,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   Future<void> _browseSavedLists() async {
     final result = await Navigator.of(context).push<ShoppingList?>(
-      MaterialPageRoute(builder: (_) => const SavedListsPage()),
+      MaterialPageRoute(
+        builder: (_) => SavedListsPage(performanceMode: widget.performanceMode),
+      ),
     );
     if (result != null) {
       setState(() {
