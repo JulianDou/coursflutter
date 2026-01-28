@@ -50,7 +50,7 @@ Nous avions optez pour le Equilibré.
 - [x] Intégration d'au moins un package de pub.dev (hors stockage) pertinent pour votre métier
 - [x] Utilisation de stockage persistant (local avec SharedPreferences/Hive/SQLite ou Firebase/Supabase)
 - [x] Utilisation d'images (assets locaux ou réseau) de manière cohérente
-- [ ] Gestion du thème avancé avec mode light et dark (switch dans paramètres, sauvegarde de la préférence, toute l'app s'adapte)
+- [x] Gestion du thème avancé avec mode light et dark (switch dans paramètres, sauvegarde de la préférence, toute l'app s'adapte)
 
 ## 🚀 Installation
 ```
@@ -58,20 +58,18 @@ flutter pub get
 ```
 puis lancer le débuggage avec votre téléphone en mode développeur connecté à l'ordinateur
 
+## 🔑 API/Credentials
+Pas besoin de clé API
+
 ## 📸 Screenshots
 ![List2Course-principal](screen/List2Course-principal.jpeg)
 ![List2Course-principal-blanc](screen/List2Course-principal-blanc.jpeg)
-![List2Course-parametre](screen/List2Course-parametre.jpeg)
 ![List2Course-scan](screen/List2Course-scan.jpeg)
 ![List2Course-article](screen/List2Course-article.jpeg)
 ![List2Course-liste](screen/List2Course-liste.jpeg)
+![List2Course-parametre](screen/List2Course-parametre.jpeg)
 
-## Vidéo
+## 🎥 Vidéo
 ![List2Course-video](screen/video_List2Course.mp4)
 
 
-## 🔑 API/Credentials (si applicable)
-Pas besoin de clé API
-
-## 📝 Difficultés rencontrées
-[2-3 défis techniques que vous avez surmontés]
