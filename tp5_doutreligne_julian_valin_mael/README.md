@@ -62,14 +62,14 @@ puis lancer le débuggage avec votre téléphone en mode développeur connecté 
 Pas besoin de clé API
 
 ## 📸 Screenshots
-![List2Course-principal](screen/List2Course-principal.jpeg)
-![List2Course-principal-blanc](screen/List2Course-principal-blanc.jpeg)
-![List2Course-scan](screen/List2Course-scan.jpeg)
-![List2Course-article](screen/List2Course-article.jpeg)
-![List2Course-liste](screen/List2Course-liste.jpeg)
-![List2Course-parametre](screen/List2Course-parametre.jpeg)
+![List2Course-principal](./Screen/List2Course-principal.jpeg)
+![List2Course-principal-blanc](./Screen/List2Course-principal-blanc.jpeg)
+![List2Course-scan](./Screen/List2Course-scan.jpeg)
+![List2Course-article](./Screen/List2Course-article.jpeg)
+![List2Course-liste](./Screen/List2Course-liste.jpeg)
+![List2Course-parametre](./Screen/List2Course-parametre.jpeg)
 
 ## 🎥 Vidéo
-![List2Course-video](screen/video_List2Course.mp4)
+![List2Course-video](./Screen/video_List2Course.mp4)
 
 
