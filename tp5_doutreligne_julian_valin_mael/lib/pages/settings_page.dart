@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/settings_service.dart';
-import '../services/storage_service.dart';
 
 class SettingsPage extends StatefulWidget {
   final bool performanceMode;
@@ -18,7 +17,6 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   final SettingsService _settingsService = SettingsService();
-  final StorageService _storageService = StorageService();
   late bool _performanceMode;
 
   @override

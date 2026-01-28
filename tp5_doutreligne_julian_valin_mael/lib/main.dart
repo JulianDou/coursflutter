@@ -115,12 +115,6 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     });
   }
 
-  void _removeProduct(int index) {
-    setState(() {
-      _cartProducts.removeAt(index);
-    });
-  }
-
   void _updateQuantity(int index, int delta) {
     setState(() {
       _cartProducts[index].quantity += delta;
