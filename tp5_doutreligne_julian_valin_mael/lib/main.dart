@@ -8,8 +8,12 @@ import 'widgets/glass_morphism.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'models/product.dart';
 import 'models/shopping_list.dart';
+import 'models/cart_product.dart';
 import 'pages/saved_lists_page.dart';
 import 'services/storage_service.dart';
+import 'widgets/product_card.dart';
+import 'widgets/empty_cart_state.dart';
+import 'widgets/cart_summary.dart';
 
 void main() {
   runApp(const MyApp());
@@ -33,27 +37,6 @@ class MyApp extends StatelessWidget {
       home: const ShoppingListScreen(),
     );
   }
-}
-
-// Modèle pour un produit dans la liste
-class CartProduct {
-  final String barcode;
-  final String name;
-  final String? brand;
-  final String? imageUrl;
-  final String? nutriscoreGrade;
-  final double? price;
-  int quantity;
-
-  CartProduct({
-    required this.barcode,
-    required this.name,
-    this.brand,
-    this.imageUrl,
-    this.nutriscoreGrade,
-    this.price,
-    this.quantity = 1,
-  });
 }
 
 class ShoppingListScreen extends StatefulWidget {
@@ -162,21 +145,24 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   Future<void> _saveCurrentList() async {
     if (_cartProducts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La liste est vide')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('La liste est vide')));
       return;
     }
     final now = DateTime.now();
-    final name = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} '
+    final name =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} '
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     final products = _cartProducts
-        .map((c) => Product(
-              id: c.barcode,
-              name: c.name,
-              price: (c.price ?? 0.0),
-              quantity: c.quantity,
-            ))
+        .map(
+          (c) => Product(
+            id: c.barcode,
+            name: c.name,
+            price: (c.price ?? 0.0),
+            quantity: c.quantity,
+          ),
+        )
         .toList();
     final list = ShoppingList(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -184,9 +170,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       products: products,
     );
     await _storage.addList(list);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Liste enregistrée: "$name"')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Liste enregistrée: "$name"')));
   }
 
   Future<void> _browseSavedLists() async {
@@ -197,12 +183,16 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       setState(() {
         _cartProducts
           ..clear()
-          ..addAll(result.products.map((p) => CartProduct(
+          ..addAll(
+            result.products.map(
+              (p) => CartProduct(
                 barcode: p.id,
                 name: p.name,
                 price: p.price,
                 quantity: p.quantity,
-              )));
+              ),
+            ),
+          );
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Liste chargée: "${result.name}"')),
@@ -253,308 +243,34 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       ),
       body: GradientBackground(
         child: Column(
-        children: [
-          Expanded(
-            child: _cartProducts.isEmpty
-                ? Center(
-                    child: GlassContainer(
-                      borderRadius: 12,
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.shopping_cart_outlined,
-                            size: 100,
-                            color: Colors.teal,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Votre liste est vide',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.teal,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Scannez un produit pour commencer',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ],
-                      ),
+          children: [
+            Expanded(
+              child: _cartProducts.isEmpty
+                  ? const EmptyCartState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: _cartProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = _cartProducts[index];
+                        return ProductCard(
+                          product: product,
+                          onIncrement: () => _updateQuantity(index, 1),
+                          onDecrement: () => _updateQuantity(index, -1),
+                        );
+                      },
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _cartProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = _cartProducts[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: GlassContainer(
-                          borderRadius: 12,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Image du produit
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: product.imageUrl != null
-                                    ? Image.network(
-                                        product.imageUrl!,
-                                        width: 80,
-                                        height: 80,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                              return Container(
-                                                width: 80,
-                                                height: 80,
-                                                color: Colors.grey[200],
-                                                child: const Icon(
-                                                  Icons.image_not_supported,
-                                                  color: Colors.grey,
-                                                ),
-                                              );
-                                            },
-                                      )
-                                    : Container(
-                                        width: 80,
-                                        height: 80,
-                                        color: Colors.grey[200],
-                                        child: const Icon(
-                                          Icons.shopping_bag,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                              ),
-                              const SizedBox(width: 12),
-                              // Informations du produit
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      product.name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if (product.brand != null) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        product.brand!,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.grey.shade700,
-                                        ),
-                                      ),
-                                    ],
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        // Nutri-Score
-                                        if (product.nutriscoreGrade != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: _getNutriscoreColor(
-                                                product.nutriscoreGrade!,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              'Nutri-Score ${product.nutriscoreGrade!.toUpperCase()}',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 11,
-                                              ),
-                                            ),
-                                          ),
-                                        const Spacer(),
-                                        // Prix
-                                        if (product.price != null)
-                                          Text(
-                                            '${(product.price! * product.quantity).toStringAsFixed(2)} €',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                              color: Colors.teal,
-                                            ),
-                                          )
-                                        else
-                                          Text(
-                                            'Prix non disponible',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Contrôles de quantité
-                              Column(
-                                children: [
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.add_circle,
-                                      color: Colors.teal,
-                                    ),
-                                    onPressed: () => _updateQuantity(index, 1),
-                                    iconSize: 28,
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 4,
-                                    ),
-                                    child: Text(
-                                      '${product.quantity}',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18,
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      product.quantity > 1
-                                          ? Icons.remove_circle
-                                          : Icons.delete,
-                                      color: product.quantity > 1
-                                          ? Colors.orange
-                                          : Colors.red,
-                                    ),
-                                    onPressed: () => _updateQuantity(index, -1),
-                                    iconSize: 28,
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-          // Barre de total
-          if (_cartProducts.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(12),
-              child: GlassContainer(
-                borderRadius: 16,
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  spacing: 12,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'Total',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_cartProducts.length} article(s)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          '${_totalPrice.toStringAsFixed(2)} €',
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.teal,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Nutri-Score moyen :',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[800],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(4),
-                            color: _getNutriscoreColor(_averageNutriscore),
-                          ),
-                          child: Text(
-                            _averageNutriscore,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        )
-                      ]
-                    )
-                  ],
-                ),
-              ),
             ),
-        ],
+            // Barre de total
+            if (_cartProducts.isNotEmpty)
+              CartSummary(
+                itemCount: _cartProducts.length,
+                totalPrice: _totalPrice,
+                averageNutriscore: _averageNutriscore,
+              ),
+          ],
         ),
       ),
     );
-  }
-
-  Color _getNutriscoreColor(String grade) {
-    switch (grade.toLowerCase()) {
-      case 'a':
-        return const Color(0xFF038141);
-      case 'b':
-        return const Color(0xFF85BB2F);
-      case 'c':
-        return const Color(0xFFFECB02);
-      case 'd':
-        return const Color(0xFFEE8100);
-      case 'e':
-        return const Color(0xFFE63E11);
-      default:
-        return Colors.grey;
-    }
   }
 }
 
