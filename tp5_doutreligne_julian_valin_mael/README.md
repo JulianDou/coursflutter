@@ -70,6 +70,6 @@ Pas besoin de clé API
 ![List2Course-parametre](./Screen/List2Course-parametre.jpeg)
 
 ## 🎥 Vidéo
-![List2Course-link](https://youtube.com/shorts/iwX5maiPuAg?feature=share)
+https://youtube.com/shorts/iwX5maiPuAg?feature=share
 
 
