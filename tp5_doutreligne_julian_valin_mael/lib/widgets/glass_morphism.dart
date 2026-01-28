@@ -9,6 +9,7 @@ class GlassContainer extends StatelessWidget {
   final double borderRadius;
   final Color? backgroundColor;
   final Border? border;
+  final bool performanceMode;
 
   const GlassContainer({
     super.key,
@@ -17,10 +18,30 @@ class GlassContainer extends StatelessWidget {
     this.borderRadius = 16,
     this.backgroundColor,
     this.border,
+    this.performanceMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (performanceMode) {
+      // Flat design for performance mode
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(borderRadius),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        padding: padding,
+        child: child,
+      );
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: BackdropFilter(
@@ -41,11 +62,25 @@ class GlassContainer extends StatelessWidget {
 /// Gradient background widget
 class GradientBackground extends StatelessWidget {
   final Widget child;
+  final bool performanceMode;
 
-  const GradientBackground({super.key, required this.child});
+  const GradientBackground({
+    super.key,
+    required this.child,
+    this.performanceMode = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (performanceMode) {
+      // Flat background for performance mode
+      return Container(
+        height: double.infinity,
+        color: Colors.grey[50],
+        child: child,
+      );
+    }
+
     return Container(
       height: double.infinity,
       decoration: BoxDecoration(

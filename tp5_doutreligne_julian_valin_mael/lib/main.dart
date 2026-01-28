@@ -10,7 +10,9 @@ import 'models/product.dart';
 import 'models/shopping_list.dart';
 import 'models/cart_product.dart';
 import 'pages/saved_lists_page.dart';
+import 'pages/settings_page.dart';
 import 'services/storage_service.dart';
+import 'services/settings_service.dart';
 import 'widgets/product_card.dart';
 import 'widgets/empty_cart_state.dart';
 import 'widgets/cart_summary.dart';
@@ -19,11 +21,47 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final SettingsService _settingsService = SettingsService();
+  bool _performanceMode = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final performanceMode = await _settingsService.getPerformanceMode();
+    setState(() {
+      _performanceMode = performanceMode;
+      _isLoading = false;
+    });
+  }
+
+  void _updatePerformanceMode(bool value) {
+    setState(() {
+      _performanceMode = value;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      );
+    }
+
     return MaterialApp(
       title: 'Liste de Courses',
       debugShowCheckedModeBanner: false,
@@ -34,13 +72,23 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const ShoppingListScreen(),
+      home: ShoppingListScreen(
+        performanceMode: _performanceMode,
+        onPerformanceModeChanged: _updatePerformanceMode,
+      ),
     );
   }
 }
 
 class ShoppingListScreen extends StatefulWidget {
-  const ShoppingListScreen({super.key});
+  final bool performanceMode;
+  final Function(bool) onPerformanceModeChanged;
+
+  const ShoppingListScreen({
+    super.key,
+    required this.performanceMode,
+    required this.onPerformanceModeChanged,
+  });
 
   @override
   State<ShoppingListScreen> createState() => _ShoppingListScreenState();
@@ -177,7 +225,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   Future<void> _browseSavedLists() async {
     final result = await Navigator.of(context).push<ShoppingList?>(
-      MaterialPageRoute(builder: (_) => const SavedListsPage()),
+      MaterialPageRoute(
+        builder: (_) => SavedListsPage(performanceMode: widget.performanceMode),
+      ),
     );
     if (result != null) {
       setState(() {
@@ -207,6 +257,21 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         title: const Text('Ma Liste de Courses'),
         backgroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Paramètres',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SettingsPage(
+                    performanceMode: widget.performanceMode,
+                    onPerformanceModeChanged: widget.onPerformanceModeChanged,
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.list_alt),
             tooltip: 'Listes enregistrées',
@@ -242,11 +307,12 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         ],
       ),
       body: GradientBackground(
+        performanceMode: widget.performanceMode,
         child: Column(
           children: [
             Expanded(
               child: _cartProducts.isEmpty
-                  ? const EmptyCartState()
+                  ? EmptyCartState(performanceMode: widget.performanceMode)
                   : ListView.builder(
                       padding: const EdgeInsets.all(12),
                       itemCount: _cartProducts.length,
@@ -254,6 +320,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                         final product = _cartProducts[index];
                         return ProductCard(
                           product: product,
+                          performanceMode: widget.performanceMode,
                           onIncrement: () => _updateQuantity(index, 1),
                           onDecrement: () => _updateQuantity(index, -1),
                         );
@@ -266,6 +333,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 itemCount: _cartProducts.length,
                 totalPrice: _totalPrice,
                 averageNutriscore: _averageNutriscore,
+                performanceMode: widget.performanceMode,
               ),
           ],
         ),
