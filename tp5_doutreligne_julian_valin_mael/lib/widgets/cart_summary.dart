@@ -6,12 +6,14 @@ class CartSummary extends StatelessWidget {
   final int itemCount;
   final double totalPrice;
   final String averageNutriscore;
+  final bool performanceMode;
 
   const CartSummary({
     super.key,
     required this.itemCount,
     required this.totalPrice,
     required this.averageNutriscore,
+    this.performanceMode = false,
   });
 
   @override
@@ -21,6 +23,7 @@ class CartSummary extends StatelessWidget {
       child: GlassContainer(
         borderRadius: 16,
         padding: const EdgeInsets.all(20),
+        performanceMode: performanceMode,
         child: Column(
           spacing: 12,
           children: [

@@ -9,12 +9,14 @@ class ProductCard extends StatelessWidget {
   final CartProduct product;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
+  final bool performanceMode;
 
   const ProductCard({
     super.key,
     required this.product,
     required this.onIncrement,
     required this.onDecrement,
+    this.performanceMode = false,
   });
 
   @override
@@ -23,6 +25,7 @@ class ProductCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: GlassContainer(
         borderRadius: 12,
+        performanceMode: performanceMode,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
