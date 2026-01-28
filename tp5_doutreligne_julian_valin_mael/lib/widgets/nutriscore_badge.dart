@@ -17,7 +17,7 @@ class NutriscoreBadge extends StatelessWidget {
       child: Text(
         fontSize > 12
             ? grade.toUpperCase()
-            : 'Nutri-Score ${grade.toUpperCase()}',
+            : 'Nutri-Score ${grade.toUpperCase() == "UNKNOWN" ? "?" : grade.toUpperCase()}',
         style: TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.bold,

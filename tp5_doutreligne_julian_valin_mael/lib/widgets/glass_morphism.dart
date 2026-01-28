@@ -50,7 +50,7 @@ class GradientBackground extends StatelessWidget {
       height: double.infinity,
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: const AssetImage('assets/bg.jpg'),
+          image: const AssetImage('assets/bg-market.webp'),
           fit: BoxFit.cover,
         ),
       ),
