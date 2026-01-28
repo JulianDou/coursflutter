@@ -40,7 +40,7 @@ Notre projet repose sur une idée simple, pourquoi s'embêter à retenir ou devo
 
 Nous vous proposons, une application, avec laquelle vous pouvez scanner vos articles préférés, et en toute simplicité, regarder le Nutri-Score, le prix, et vous pouvez même sauvegarder votre liste pour une prochaine fois.
 
-Voici **ScanCourse**
+Voici **List2Course**
 
 ## 🎯 Orientation choisie
 Nous avions optez pour le Equilibré.
@@ -59,7 +59,16 @@ flutter pub get
 puis lancer le débuggage avec votre téléphone en mode développeur connecté à l'ordinateur
 
 ## 📸 Screenshots
-[3-5 captures d'écran de l'application]
+![List2Course-principal](screen/List2Course-principal.jpeg)
+![List2Course-principal-blanc](screen/List2Course-principal-blanc.jpeg)
+![List2Course-parametre](screen/List2Course-parametre.jpeg)
+![List2Course-scan](screen/List2Course-scan.jpeg)
+![List2Course-article](screen/List2Course-article.jpeg)
+![List2Course-liste](screen/List2Course-liste.jpeg)
+
+## Vidéo
+![List2Course-video](screen/video_List2Course.mp4)
+
 
 ## 🔑 API/Credentials (si applicable)
 Pas besoin de clé API
